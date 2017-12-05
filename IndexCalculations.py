@@ -26,6 +26,7 @@ class Index:
     def __init__(self, FXMH: FXMarketHistory, startDate: datetime, ref: CurrencyPair = CurrencyPair("XBT", "EUR")):
         self.Ref = ref
         self.Currencies = []
+        self.FXMH = FXMH
         columns = ["open","close","return"]
         if FXMH.CurrencyRef != ref.Y:
             raise Exception("Wrong FXMarketHistory Reference Currency")
@@ -39,37 +40,51 @@ class Index:
                 auxDF = FXMH.DataFrames[curr][["time"] + columns]
                 self.DataFrame = pd.merge(self.DataFrame, auxDF,how = "left", right_on= "time", left_on = "time")
                 RenameColumns(self.DataFrame,columns,curr)
-        print(self.DataFrame)
 
     def AddAllocationHistory(self, AH: AllocationHistory):
         N = len(self.DataFrame)
-        dict = {}
+        # p: percentage
+        # v: value
+        dict_p = {}
+        dict_v = {}
         last_n = 0
         for alloc in AH.List:
             n = len(self.DataFrame[self.DataFrame["time"] <= alloc.Date])
             if n > last_n:
                 last_n = n
                 for curr in alloc.Dictionary.keys():
-                    L = []
                     try:
-                        L = dict[curr]
-                        if n - 1 - len(L) > 0:
-                            L += [L[-1] for i in range(n - 1 - len(L))]
-                        L += [alloc.Dictionary[curr].Percentage]
+                        L_p = dict_p[curr]
+                        L_v = dict_v[curr]
+                        if n - 1 - len(L_p) > 0:
+                            L_p += [L_p[-1] for i in range(n - 1 - len(L_p))]
+                            L_v += [L_v[-1] for i in range(n - 1 - len(L_v))]
+                        L_p += [alloc.Dictionary[curr].Percentage]
+                        L_v += [alloc.Dictionary[curr].Amount]
                     except:
-                        L = [0 for i in range(n - 1)]
-                        L += [alloc.Dictionary[curr].Percentage]
-                    dict[curr] = L
+                        L_p = [0 for i in range(n - 1)]
+                        L_v = [0 for i in range(n - 1)]
+                        L_p += [alloc.Dictionary[curr].Percentage]
+                        L_v += [alloc.Dictionary[curr].Amount]
+                    dict_p[curr] = L_p
+                    dict_v[curr] = L_v
             if n > 0 and n == last_n:
                 for curr in alloc.Dictionary.keys():
                     try:
-                        dict[curr][-1] = alloc.Dictionary[curr].Percentage
+                        dict_p[curr][-1] = alloc.Dictionary[curr].Percentage
+                        dict_v[curr][-1] = alloc.Dictionary[curr].Amount
                     except:
-                        dict[curr] = [0 for i in range(n-1)] + [alloc.Dictionary[curr].Percentage]
-        for curr in dict.keys():
-            L = dict[curr]
-            dict[curr] = L + [L[-1] for i in range(N - len(L))]
-            self.DataFrame["Alloc_" + curr.name] = dict[curr]
+                        dict_p[curr] = [0 for i in range(n-1)] + [alloc.Dictionary[curr].Percentage]
+                        dict_v[curr] = [0 for i in range(n-1)] + [alloc.Dictionary[curr].Amount]
+
+        for curr in dict_p.keys():
+            L_p = dict_p[curr]
+            L_v = dict_v[curr]
+            dict_p[curr] = L_p + [L_p[-1] for i in range(N - len(L_p))]
+            dict_v[curr] = L_v + [L_v[-1] for i in range(N - len(L_v))]
+            self.DataFrame["Alloc_" + curr.name] = dict_p[curr]
+            self.DataFrame["Amount_" + curr.name] = dict_v[curr]
+
 
     def IndexCalculations(self):
         for curr in self.Currencies:
@@ -79,11 +94,17 @@ class Index:
             self.DataFrame["Index_" + curr.name] = Index
 
         Total = [1000]
+        Total_amount = [0]
         for (index, row) in self.DataFrame[1:].iterrows():
             ret = 0
+            add = 0
             for curr in self.Currencies:
                 if curr != self.Ref.Y:
-                    print(row["Alloc_" + curr.name])
                     ret += (row["Alloc_" + curr.name] * row["return_" + curr.name])
+                    add += self.FXMH.GetFXMarket(row["time"]).ConvertPrice(Price(row["Amount_" + curr.name],curr), self.Ref.Y).Amount
+                else:
+                    add += row["Amount_" + curr.name]
             Total += [Total[-1] * (1 + ret)]
+            Total_amount += [add]
         self.DataFrame["Total"] = Total
+        self.DataFrame["Amount"] = Total_amount

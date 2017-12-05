@@ -50,6 +50,10 @@ I.AddAllocationHistory(AH)
 I.IndexCalculations()
 print(I.DataFrame)
 
+fig2 = plt.figure()
+plt.plot(I.DataFrame["time"], I.DataFrame["Amount"])
+plt.show()
+
 fig1 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_XBT"],'-')
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_ETH"],'-')

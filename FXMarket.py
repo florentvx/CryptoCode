@@ -25,7 +25,7 @@ class FXMarket:
             if xRate.CurPair.Y == X:
                 if xRate.CurPair.X == Y:
                     return 1 / xRate.Rate
-        raise Exception("Undefined XChangeRate")
+        raise Exception("Undefined XChangeRate: " + X.ToString + " " + Y.ToString)
 
     def ConvertPrice(self, input: Price, output: Currency):
         rate = self.GetFXRate(input.Currency, output)
