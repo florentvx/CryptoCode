@@ -23,23 +23,53 @@ def RenameColumns(DF: pd.DataFrame, columns: list, cur: Currency):
 
 class Index:
 
-    def __init__(self, FXMH: FXMarketHistory, startDate: datetime, ref: CurrencyPair = CurrencyPair("XBT", "EUR")):
+    def __init__(self, FXMH: FXMarketHistory, startDate: datetime, ref: Currency = Currency("EUR")):
         self.Ref = ref
         self.Currencies = []
+        columns = ["return"]
         self.FXMH = FXMH
-        columns = ["open","close","return"]
-        if FXMH.CurrencyRef != ref.Y:
+        if FXMH.CurrencyRef != ref:
             raise Exception("Wrong FXMarketHistory Reference Currency")
-        self.DataFrame = FXMH.DataFrames[ref.X][["time"] + columns]
+        Curr0 = list(FXMH.DataFrames)[0]
+        self.DataFrame = FXMH.DataFrames[Curr0][["time"] + columns]
         self.DataFrame = self.DataFrame[self.DataFrame["time"] >= startDate]
-        RenameColumns(self.DataFrame,columns,ref.X)
+        RenameColumns(self.DataFrame,columns,Curr0)
         self.DataFrame["time"] = self.DataFrame["time"].apply(lambda x:  DateCut(x))
         for curr in FXMH.DataFrames.keys():
             self.Currencies += [curr]
-            if curr != ref.X:
+            if curr != Curr0:
                 auxDF = FXMH.DataFrames[curr][["time"] + columns]
                 self.DataFrame = pd.merge(self.DataFrame, auxDF,how = "left", right_on= "time", left_on = "time")
                 RenameColumns(self.DataFrame,columns,curr)
+
+    def AddAllocationHistory2(self, AH: AllocationHistory):
+        Percentages = {}
+        totalAmount = {}
+
+        for date in AH.History.keys():
+            percent = {}
+            amount = 0
+            alloc = AH.History[date]
+            for cur in alloc.Dictionary:
+                allocCur = alloc.Dictionary[cur]
+                percent[cur] = [allocCur.Percentage]
+                amount += self.FXMH.GetFXMarket(date).ConvertPrice(allocCur.Price, self.Ref).Amount
+            totalAmount[date] = amount
+            Percentages[date] = percent
+
+        self.Allocation = Percentages
+        self.Amount = totalAmount
+
+    def GetAllocationDate(self, date: datetime):
+        res = 0
+        dates = list(self.Allocation)
+        for idate in dates:
+            if res == 0:
+                res = idate
+            else:
+                if res < idate and idate <= date:
+                    res = idate
+        return res
 
     def AddAllocationHistory(self, AH: AllocationHistory):
         N = len(self.DataFrame)
@@ -48,7 +78,7 @@ class Index:
         dict_p = {}
         dict_v = {}
         last_n = 0
-        for alloc in AH.List:
+        for alloc in AH.History:
             n = len(self.DataFrame[self.DataFrame["time"] <= alloc.Date])
             if n > last_n:
                 last_n = n
@@ -95,16 +125,24 @@ class Index:
 
         Total = [1000]
         Total_amount = [0]
+        lastAllocDate = 0
         for (index, row) in self.DataFrame[1:].iterrows():
             ret = 0
-            add = 0
+            date = row["time"]
+            AllocDate = self.GetAllocationDate(date)
+            Alloc = self.Allocation[AllocDate]
             for curr in self.Currencies:
-                if curr != self.Ref.Y:
-                    ret += (row["Alloc_" + curr.name] * row["return_" + curr.name])
-                    add += self.FXMH.GetFXMarket(row["time"]).ConvertPrice(Price(row["Amount_" + curr.name],curr), self.Ref.Y).Amount
+                allocItem = Alloc.get(curr)
+                if allocItem == None:
+                    percent = 0
                 else:
-                    add += row["Amount_" + curr.name]
+                    percent = allocItem[0]
+                ret += percent * row["return_" + curr.name]
             Total += [Total[-1] * (1 + ret)]
-            Total_amount += [add]
+            if AllocDate != lastAllocDate:
+                Total_amount += [self.Amount[AllocDate]]
+                lastAllocDate = AllocDate
+            else:
+                Total_amount += [Total_amount[-1] * (1 + ret)]
         self.DataFrame["Total"] = Total
         self.DataFrame["Amount"] = Total_amount

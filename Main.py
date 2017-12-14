@@ -45,10 +45,12 @@ DF_BCH = FXEURMH.DataFrames[Currency("BCH")]
 print(AH.ToString)
 
 
-I = Index(FXEURMH, AH.List[0].Date)
-I.AddAllocationHistory(AH)
+I = Index(FXEURMH, AH.StartDate)
+I.AddAllocationHistory2(AH)
 I.IndexCalculations()
 print(I.DataFrame)
+
+print(I.Amount)
 
 fig2 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Amount"])

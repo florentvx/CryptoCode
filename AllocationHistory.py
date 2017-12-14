@@ -18,6 +18,9 @@ class AllocationElement:
         return "( " + str(int(self.Percentage * 10000.0) / 100.0) + \
                " %, " + str(self.Amount) + " " + self.Currency.ToString + " )"
 
+    @property
+    def Price(self):
+        return Price(self.Amount, self.Currency)
 
 class Allocation:
 
@@ -106,19 +109,30 @@ class AllocationHistory:
     def __init__(self, TL: TransactionList, FXH: FXMarketHistory, Currency: Currency = Currency.EUR):
         alloc = Allocation({})
         alloc.FirstDeposit(datetime(2000,1,1), Price(0, Currency))
-        self.List = []
+        self.History = {}
+        startDate = datetime(3000,1,1)
         for transaction in TL.List:
             FXMarket = FXH.GetFXMarket(transaction.Date)
-            if len(FXMarket.FX) > 0:
-                try:
-                    self.List += [self.List[-1].AddTransaction(transaction,FXMarket)]
-                except:
-                    self.List += [alloc.AddTransaction(transaction,FXMarket)]
+            if transaction.Date < startDate:
+                startDate = transaction.Date
+            alloc = alloc.AddTransaction(transaction,FXMarket)
+            self.History[alloc.Date] = alloc
+        self.StartDate = startDate
 
+    def GetAllocation(self, date):
+        try:
+            alloc = self.History[date]
+        except:
+            lastAlloc = Allocation({})
+            lastAlloc.FirstDeposit(datetime(2000,1,1), Price(0, Currency))
+            for alloc in self.History:
+                if alloc.Date < date and alloc.date > lastAlloc:
+                    lastAlloc = alloc
+            return lastAlloc
 
     @property
     def ToString(self):
         res = "Allocation History" + '\n'
-        for alloc in self.List:
-            res += alloc.ToString + '\n'
+        for date in self.History:
+            res += self.History[date].ToString + '\n'
         return res
