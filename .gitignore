@@ -8,3 +8,7 @@ __pycache__/IndexCalculations.cpython-36.pyc
 __pycache__/FXMarket.cpython-36.pyc
 
 __pycache__/AllocationHistory.cpython-36.pyc
+
+*.pyc
+
+.DS_Store
