@@ -45,6 +45,7 @@ class Index:
     def AddAllocationHistory2(self, AH: AllocationHistory):
         Percentages = {}
         totalAmount = {}
+        fees = {}
 
         for date in AH.History.keys():
             percent = {}
@@ -56,9 +57,11 @@ class Index:
                 amount += self.FXMH.GetFXMarket(date).ConvertPrice(allocCur.Price, self.Ref).Amount
             totalAmount[date] = amount
             Percentages[date] = percent
+            fees[date] = alloc.Fees
 
         self.Allocation = Percentages
         self.Amount = totalAmount
+        self.Fees = fees
 
     def GetAllocationDate(self, date: datetime):
         res = 0
@@ -138,11 +141,14 @@ class Index:
                 else:
                     percent = allocItem[0]
                 ret += percent * row["return_" + curr.name]
-            Total += [Total[-1] * (1 + ret)]
             if AllocDate != lastAllocDate:
                 Total_amount += [self.Amount[AllocDate]]
                 lastAllocDate = AllocDate
+                ret += self.Fees[AllocDate].Percentage * (- 1.00)
             else:
+                ret /= (1 - self.Fees[AllocDate].Percentage)
                 Total_amount += [Total_amount[-1] * (1 + ret)]
+
+            Total += [Total[-1] * (1 + ret)]
         self.DataFrame["Total"] = Total
         self.DataFrame["Amount"] = Total_amount
