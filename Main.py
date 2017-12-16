@@ -28,8 +28,8 @@ print(TL.ToString)
 
 
 
-FXEURMH = FXMarketHistory(["XBT","ETH","BCH"],240)
-#FXBTCMH = FXMarketHistory(["ETH"], 240, ref = Currency("XBT"))
+FXEURMH = FXMarketHistory(["XBT","ETH","BCH","XRP","LTC"],240)
+#FXEURMH = FXMarketHistory(["XBT","ETH","BCH","XRP","LTC"],240)
 
 AH = AllocationHistory(TL,FXEURMH)
 
@@ -39,16 +39,18 @@ DF_ETH = FXEURMH.DataFrames[Currency("ETH")]
 
 #DF_ETHBTC = FXBTCMH.DataFrames[Currency("ETH")]
 
-FXEURMH.RefactorReturns(.25, Currency("BCH"))
+FXEURMH.RefactorReturns(.5, Currency("BCH"))
 DF_BCH = FXEURMH.DataFrames[Currency("BCH")]
+FXEURMH.RefactorReturns(.5, Currency("LTC"))
+DF_LTC = FXEURMH.DataFrames[Currency("LTC")]
+FXEURMH.RefactorReturns(.5, Currency("XRP"))
+DF_XRP = FXEURMH.DataFrames[Currency("XRP")]
 
-print(AH.ToString)
 
 
 I = Index(FXEURMH, AH.StartDate)
 I.AddAllocationHistory2(AH)
 I.IndexCalculations()
-print(I.DataFrame)
 
 print(I.Amount)
 
@@ -59,17 +61,20 @@ plt.show()
 fig1 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_XBT"],'-')
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_ETH"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
+#plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
 plt.plot(I.DataFrame["time"], I.DataFrame["Total"],'-')
-plt.legend(["BTC", "ETH", "BCH", "Strat"])
+plt.legend(["BTC", "ETH", "Strat"])
 plt.show()
 
 
 fig = plt.figure()
 plt.plot(DF_BTC["time"], DF_BTC["Index"],'-')
 plt.plot(DF_ETH["time"], DF_ETH["Index"],'-')
-#plt.plot(DF_ETH["time"], DF_BCH["Index"],'-')
-plt.legend(["BTC", "ETH"])#, "BCH"])
+plt.plot(DF_BCH["time"], DF_BCH["Index"],'-')
+plt.plot(DF_LTC["time"], DF_LTC["Index"],'-')
+plt.plot(DF_XRP["time"], DF_XRP["Index"],'-')
+
+plt.legend(["BTC", "ETH", "BCH", "LTC", "XRP"])
 plt.show()
 
 

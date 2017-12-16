@@ -7,6 +7,8 @@ class Currency(Enum):
     XBT = "XBT"
     ETH = "ETH"
     BCH = "BCH"
+    XRP = "XRP"
+    LTC = "LTC"
 
     @property
     def ToID(self):
@@ -24,6 +26,10 @@ class Currency(Enum):
             return "Ether"
         elif self == Currency.BCH:
             return "BitCoinCash"
+        elif self == Currency.LTC:
+            return "LiteCoin"
+        elif self == Currency.XRP:
+            return "Ripple"
         else:
             Exception("Currency Error")
 
@@ -66,7 +72,7 @@ class CurrencyPair:
 
     @property
     def RequestID(self):
-        if self.X != Currency.BCH:
+        if self.X != Currency.BCH and self.X != Currency.LTC:
             return self.X.Prefix + self.X.ToID + self.Y.Prefix + self.Y.ToID
         else:
             return self.X.ToID + self.Y.ToID

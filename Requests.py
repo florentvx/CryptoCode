@@ -58,7 +58,9 @@ def OHLC(X = "XBT", Z = "USD", startDate = datetime.datetime(2000,1,1), freq = 1
     text = urllib.request.urlopen(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
     print(pairID)
     #print(json.loads(text.read().decode('utf8'))["result"])
-    data = json.loads(text.read().decode('utf8'))["result"][pairID]
+    data = json.loads(text.read().decode('utf8'))["result"]
+    keys = list(data.keys())
+    data = data[keys[0]]
     time = []
     open = []
     high = []
