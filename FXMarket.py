@@ -1,7 +1,7 @@
 
 from Requests import *
 from Prices import *
-
+from SortedDictionary import *
 
 
 
@@ -15,10 +15,24 @@ class FXMarket:
             else:
                 raise Exception("Wrong Input")
 
+    def IsFXRate(self,X: Currency, Y: Currency):
+        if X==Y:
+            return 0
+        else:
+            for xRate in self.FX:
+                if xRate.CurPair.X == X:
+                    if xRate.CurPair.Y == Y:
+                        return 1
+                if xRate.CurPair.Y == X:
+                    if xRate.CurPair.X == Y:
+                        return -1
+            return 0
+
     def GetFXRate(self, X: Currency, Y: Currency):
         if X == Y:
             return 1.0
-        for xRate in self.FX:
+        for i in range(len(self.FX)):
+            xRate = self.FX[i]
             if xRate.CurPair.X == X:
                 if xRate.CurPair.Y == Y:
                     return xRate.Rate
@@ -26,6 +40,18 @@ class FXMarket:
                 if xRate.CurPair.X == Y:
                     return 1 / xRate.Rate
         raise Exception("Undefined XChangeRate: " + X.ToString + " " + Y.ToString)
+
+    def AddQuote(self, XCRate: XChangeRate):
+        X = XCRate.CurPair.X
+        Y = XCRate.CurPair.Y
+        test = self.IsFXRate(X,Y)
+        if test > 0:
+            self.FX[test] = XCRate
+        elif test < 0:
+            self.FX[-test] = XChangeRate(XCRate.Rate,Y,X)
+        else:
+            self.FX += [XCRate]
+
 
     def ConvertPrice(self, input: Price, output: Currency):
         rate = self.GetFXRate(input.Currency, output)
@@ -46,17 +72,42 @@ class FXMarket:
 
 class FXMarketHistory:
 
-    def __init__(self, CurrencyList: list, freq: int, ref: Currency = Currency.EUR):
+    def __init__(self, ref: Currency = Currency.EUR):
         self.CurrencyRef = ref
+        self.FXMarkets = SortedDictionary()
+
+    def AddQuote(self, date, cur, quote):
+        (FX,test) = self.FXMarkets.Get(date)
+        if test == 1:
+            FX.AddQuote(cur, quote)
+        else:
+            newFX = FXMarket([XChangeRate(quote, cur, self.CurrencyRef)])
+            self.FXMarkets.Add(date,newFX)
+
+    def AddXChangeRate(self, date, XRate: XChangeRate):
+        if XRate.CurPair.Y == self.CurrencyRef:
+            self.AddQuote(date,XRate.CurPair.X,XRate.Rate)
+        elif XRate.CurPair.X == self.CurrencyRef:
+            self.AddQuote(date,XRate.CurPair.X,XRate.Rate)
+        else:
+            raise Exception(XRate.ToString + " : Invalid quote (ref: " + self.CurrencyRef.ToString +")")
+
+    def Download(self, cur: Currency, freq: int, fixing: str = "close", startDate: datetime = datetime.datetime(2017,1,1)):
+        DF = OHLC(X = cur, Z = self.CurrencyRef.name, startDate = startDate, freq = freq)
+        for (index, row) in DF.iterrows():
+            self.AddQuote(row["time"], cur, row[fixing])
+
+    def DownloadList(self, CurrencyList: list, freq: int):
         self.DataFrames = {}
         for cur in CurrencyList:
-            DF = OHLC(X = cur, Z = ref.name, startDate = datetime.datetime(2017,1,1), freq = freq)
+            DF = OHLC(X = cur, Z = self.CurrencyRef.name, startDate = datetime.datetime(2017,1,1), freq = freq)
             DF["return"] = DF["close"]/DF["close"].shift(1) - 1
             Index = [1000]
             for (index,row) in DF[1:].iterrows():
                 Index += [Index[-1] * (1 + row["return"])]
             DF["Index"] = Index
             self.DataFrames[Currency(cur)] = DF
+
 
     def RefactorReturns(self, factor: float, X: Currency):
         DF = self.DataFrames[X]
@@ -67,14 +118,15 @@ class FXMarketHistory:
         DF["Index"] = Index
         self.DataFrames[Currency(X)] = DF
 
-    def GetFXMarket(self, date: datetime):
-        XChangeRates = []
-        for cur in self.DataFrames.keys():
-            DF = self.DataFrames[cur]
-            lastRow = DF[DF["time"] <= date].tail(1)
-            if len(lastRow) > 0:
-                XChangeRates += [XChangeRate(float(lastRow["close"]), cur, "EUR")]
-            else:
-                return FXMarket([])
 
-        return FXMarket(XChangeRates)
+    def GetFXMarket(self, date: datetime):
+        return self.FXMarkets.Get(date)[0]
+
+    @property
+    def ToString(self):
+        res = "FXMarketHIstory: Currency Ref : " + self.CurrencyRef.ToString + "\n"
+        for i in range(self.FXMarkets.Keys.N):
+            key = self.FXMarkets.Keys.Get(i)
+            res += str(key) + "\n"
+            res += self.GetFXMarket(key).ToString + "\n"
+        return res

@@ -7,48 +7,50 @@ class SortedList():
         self.N = 0
 
     def MatchPos(self, value, i0, iN):
-
-        if value < self.List[0]:
-            return (-1, False)
-        elif value > self.List[self.N - 1]:
-            return (self.N,False)
+        if self.N == 0:
+            return (None,None)
         else:
+            if value < self.List[0]:
+                return (-1, False)
+            elif value > self.List[self.N - 1]:
+                return (self.N - 1,False)
+            else:
 
-            continueFunction = True
-            while(continueFunction):
+                continueFunction = True
+                while(continueFunction):
 
-                if i0 >= iN or min(i0,iN) < 0  or max(i0,iN - 1) >= self.N:
-                    return (None, False)
+                    if i0 >= iN or min(i0,iN) < 0  or max(i0,iN - 1) >= self.N:
+                        return (None, False)
 
-                if i0 + 1 == iN:
-                    x = self.List[i0]
-                    if x > value:
-                        return (i0 - 1, False)
-                    else:
-                        return (i0, x == value)
-
-                elif i0 + 2 == iN:
-                    x= self.List[i0]
-                    if x == value:
-                        return (i0, True)
-                    elif x > value:
-                        return (i0 - 1, False)
-                    else:
-                        x1 = self.List[i0 + 1]
-                        if x1 <= value:
-                            return (i0 + 1,  x1 == value)
+                    if i0 + 1 == iN:
+                        x = self.List[i0]
+                        if x > value:
+                            return (i0 - 1, False)
                         else:
-                            return(i0,False)
+                            return (i0, x == value)
 
-                else:
-                    i = int((iN - i0)/2) + i0
-                    x = self.List[i]
-                    if x == value:
-                        return (i,True)
-                    elif x < value:
-                        i0 = i + 1
+                    elif i0 + 2 == iN:
+                        x= self.List[i0]
+                        if x == value:
+                            return (i0, True)
+                        elif x > value:
+                            return (i0 - 1, False)
+                        else:
+                            x1 = self.List[i0 + 1]
+                            if x1 <= value:
+                                return (i0 + 1,  x1 == value)
+                            else:
+                                return(i0,False)
+
                     else:
-                        iN = i + 1
+                        i = int((iN - i0)/2) + i0
+                        x = self.List[i]
+                        if x == value:
+                            return (i,True)
+                        elif x < value:
+                            i0 = i + 1
+                        else:
+                            iN = i + 1
 
     def Get(self,i):
         return self.List[i]
@@ -92,8 +94,11 @@ class SortedDictionary:
         self.Dictionary[key] = value
 
     def Get(self, key):
-        (i,test) = self.Keys.Match(key)
-        return (self.Dictionary[self.Keys[i]],test)
+        if self.Keys.N == 0:
+            return (None,None)
+        else:
+            (i,test) = self.Keys.Match(key)
+            return (self.Dictionary[self.Keys.Get(i)],test)
 
     @property
     def ToString(self):
@@ -104,17 +109,6 @@ class SortedDictionary:
         return res
 
 
-L = [6,2,9,9,3,34,95,65,2,-7,0,2,9,-7,95]
-SL = SortedList()
-SL.AddList(L)
 
-print(SL.List)
-print(SL.Match(7))
-
-SD = SortedDictionary()
-SD.Add(1, 1)
-SD.Add(3, 2)
-SD.Add(2, 1.5)
-print(SD.ToString)
 
 

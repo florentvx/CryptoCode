@@ -52,7 +52,9 @@ I = Index(FXEURMH, AH.StartDate)
 I.AddAllocationHistory2(AH)
 I.IndexCalculations()
 
+print("I.Amount")
 print(I.Amount)
+print("I.Amount")
 
 fig2 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Amount"])
