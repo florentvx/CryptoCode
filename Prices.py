@@ -57,8 +57,13 @@ class Price:
             self.Currency = Currency.NONE
 
     @property
+    def Copy(self):
+        return Price(self.Amount, self.Currency)
+
+    @property
     def ToString(self):
         return str(self.Amount) + " " + self.Currency.ToString
+
 
 class CurrencyPair:
 

@@ -58,7 +58,13 @@ class FXMarket:
         return Price(input.Amount * rate, output)
 
     def Sum(self, price : Price, Delta : Price):
-        return Price(price.Amount + self.ConvertPrice(Delta, price.Currency).Amount, price.Currency)
+        if price.Currency == Currency.NONE and price.Currency.Amount == 0:
+            return Delta
+        else:
+            if Delta.Currency == Currency.NONE and Delta.Amount ==0:
+                return price
+            else:
+                return Price(price.Amount + self.ConvertPrice(Delta, price.Currency).Amount, price.Currency)
 
     @property
     def ToString(self):
@@ -75,8 +81,11 @@ class FXMarketHistory:
     def __init__(self, ref: Currency = Currency.EUR):
         self.CurrencyRef = ref
         self.FXMarkets = SortedDictionary()
+        self.Currencies = []
 
     def AddQuote(self, date, cur, quote):
+        if cur not in self.Currencies:
+            self.Currencies += [cur]
         (FX,test) = self.FXMarkets.Get(date)
         if test == 1:
             FX.AddQuote(cur, quote)
@@ -97,26 +106,30 @@ class FXMarketHistory:
         for (index, row) in DF.iterrows():
             self.AddQuote(row["time"], cur, row[fixing])
 
-    def DownloadList(self, CurrencyList: list, freq: int):
-        self.DataFrames = {}
-        for cur in CurrencyList:
-            DF = OHLC(X = cur, Z = self.CurrencyRef.name, startDate = datetime.datetime(2017,1,1), freq = freq)
-            DF["return"] = DF["close"]/DF["close"].shift(1) - 1
-            Index = [1000]
-            for (index,row) in DF[1:].iterrows():
-                Index += [Index[-1] * (1 + row["return"])]
-            DF["Index"] = Index
-            self.DataFrames[Currency(cur)] = DF
+    def DownloadList(self,curList: list, freq: int, fixing: str = "close", startDate: datetime = datetime.datetime(2017,1,1)):
+        for cur in curList:
+            self.Download(cur, freq, fixing, startDate)
+
+    #def DownloadList(self, CurrencyList: list, freq: int):
+    #    self.DataFrames = {}
+    #    for cur in CurrencyList:
+    #        DF = OHLC(X = cur, Z = self.CurrencyRef.name, startDate = datetime.datetime(2017,1,1), freq = freq)
+    #        DF["return"] = DF["close"]/DF["close"].shift(1) - 1
+    #        Index = [1000]
+    #        for (index,row) in DF[1:].iterrows():
+    #            Index += [Index[-1] * (1 + row["return"])]
+    #        DF["Index"] = Index
+    #        self.DataFrames[Currency(cur)] = DF
 
 
-    def RefactorReturns(self, factor: float, X: Currency):
-        DF = self.DataFrames[X]
-        DF["return"] = (DF["close"]/DF["close"].shift(1) - 1) * factor
-        Index = [1000]
-        for (index,row) in DF[1:].iterrows():
-            Index += [Index[-1] * (1 + row["return"])]
-        DF["Index"] = Index
-        self.DataFrames[Currency(X)] = DF
+    #def RefactorReturns(self, factor: float, X: Currency):
+    #    DF = self.DataFrames[X]
+    #    DF["return"] = (DF["close"]/DF["close"].shift(1) - 1) * factor
+    #    Index = [1000]
+    #    for (index,row) in DF[1:].iterrows():
+    #        Index += [Index[-1] * (1 + row["return"])]
+    #    DF["Index"] = Index
+    #    self.DataFrames[Currency(X)] = DF
 
 
     def GetFXMarket(self, date: datetime):
@@ -126,7 +139,7 @@ class FXMarketHistory:
     def ToString(self):
         res = "FXMarketHIstory: Currency Ref : " + self.CurrencyRef.ToString + "\n"
         for i in range(self.FXMarkets.Keys.N):
-            key = self.FXMarkets.Keys.Get(i)
+            key = self.FXMarkets.Keys.HardGet(i)
             res += str(key) + "\n"
             res += self.GetFXMarket(key).ToString + "\n"
         return res

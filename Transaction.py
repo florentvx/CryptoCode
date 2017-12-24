@@ -29,7 +29,9 @@ class Transaction:
         self.Paid = paid
         self.Received = received
         self.Fees = fees
-        self.XRate = XChangeRate(paid.Amount / received.Amount, paid.Currency,received.Currency)
+        if type != TransactionType.Deposit:
+            self.XRate = XChangeRate(received.Amount / paid.Amount, paid.Currency,received.Currency)
+        # the fees are here quoted as extra/ I pay paid.Amount + fees
 
 
     @property
@@ -42,7 +44,13 @@ class Transaction:
 
 class TransactionList:
 
-    def __init__(self, data : pd.DataFrame):
+    def __init__(self):
+        self.List = []
+
+    def SetList(self, list):
+        self.List = list
+
+    def Download(self, data : pd.DataFrame):
         paidPrice = Price(0,Currency.NONE)
         receivedPrice = Price(0,Currency.NONE)
         fees = Price(0,Currency.NONE)
@@ -54,7 +62,7 @@ class TransactionList:
                     row["time"],
                     Price(0,Currency.NONE),
                     Price(row["amount"],row["asset"][1:]),
-                    Price(row["fee"],Currency.NONE))]
+                    Price(0,Currency.NONE))]
             elif row["type"] == "trade":
                 print(row["asset"])
                 asset = row["asset"]
@@ -86,6 +94,23 @@ class TransactionList:
             else:
                 raise Exception("Trade type Unknown")
 
+    @property
+    def IsSorted(self):
+        res = True
+        if len(self.List) == 0:
+            return None
+        else:
+            date = self.List[0]
+            for tr in self.List[1:]:
+                if tr.Date > date:
+                    date = tr.Date
+                else:
+                    res = False
+                    break
+            return res
+
+
+    @property
     def ToString(self):
         res = '\n' + "Transactions List: " + '\n'
         i = 0

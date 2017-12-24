@@ -5,6 +5,14 @@ class SortedList():
     def __init__(self):
         self.List = []
         self.N = 0
+        self.current = 0
+
+    @property
+    def IsEmpty(self):
+        return self.N == 0
+
+    def __iter__(self):
+        return iter(self.List)
 
     def MatchPos(self, value, i0, iN):
         if self.N == 0:
@@ -52,10 +60,10 @@ class SortedList():
                         else:
                             iN = i + 1
 
-    def Get(self,i):
+    def HardGet(self,i):
         return self.List[i]
 
-    def Match(self, value):
+    def Get(self, value):
         return self.MatchPos(value, 0, self.N)
 
 
@@ -66,7 +74,7 @@ class SortedList():
             self.N = 1
             return (-1,False)
         else:
-            (i,test) = self.Match(value)
+            (i,test) = self.Get(value)
             if i == -1:
                 self.List = [value] + self.List
                 self.N += 1
@@ -89,22 +97,32 @@ class SortedDictionary:
         self.Keys = SortedList()
         self.Dictionary = {}
 
+    @property
+    def IsEmpty(self):
+        return self.Keys.IsEmpty
+
     def Add(self, key, value):
         self.Keys.Add(key)
         self.Dictionary[key] = value
+
+    def HardGet(self, key):
+        return self.Dictionary[key]
 
     def Get(self, key):
         if self.Keys.N == 0:
             return (None,None)
         else:
-            (i,test) = self.Keys.Match(key)
-            return (self.Dictionary[self.Keys.Get(i)],test)
+            (i,test) = self.Keys.Get(key)
+            if i== (-1):
+                return (None,False)
+            else:
+                return (self.Dictionary[self.Keys.HardGet(i)],test)
 
     @property
     def ToString(self):
         res = ""
         for i in range(self.Keys.N):
-            key = self.Keys.Get(i)
+            key = self.Keys.HardGet(i)
             res += str(key) + " : " + str(self.Dictionary[key]) + "\n"
         return res
 
