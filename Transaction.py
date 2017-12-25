@@ -30,7 +30,14 @@ class Transaction:
         self.Received = received
         self.Fees = fees
         if type != TransactionType.Deposit:
-            self.XRate = XChangeRate(received.Amount / paid.Amount, paid.Currency,received.Currency)
+            ratio = int(paid.Amount / received.Amount * 10000)/10000.0
+            self.XRate = XChangeRate(ratio, received.Currency,paid.Currency)
+            #if ratio > 1:
+            #    self.XRate = XChangeRate(ratio, received.Currency,paid.Currency)
+            #else:
+            #    self.XRate = XChangeRate(1/ratio, paid.Currency, received.Currency)
+        else:
+            self.XRate = XChangeRate(1,received.Currency, received.Currency)
         # the fees are here quoted as extra/ I pay paid.Amount + fees
 
 
@@ -64,7 +71,6 @@ class TransactionList:
                     Price(row["amount"],row["asset"][1:]),
                     Price(0,Currency.NONE))]
             elif row["type"] == "trade":
-                print(row["asset"])
                 asset = row["asset"]
                 asset = asset[(len(asset) - 3):]
                 if row["amount"] > 0:

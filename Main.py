@@ -22,62 +22,59 @@ Df = JsonToDataFrame(ledger,["time","amount","fee","balance"])
 
 Df = Df.sort_values("time",0,True)
 
-TL = TransactionList(Df)
+TL = TransactionList()
+TL.Download(Df)
 
 print(TL.ToString)
 
 
 
-FXEURMH = FXMarketHistory(["XBT","ETH","BCH","XRP","LTC"],240)
+FXEURMH = FXMarketHistory()
+FXEURMH.DownloadList([Currency.XBT,Currency.ETH,Currency.BCH,Currency.XRP,Currency.LTC],240)
 #FXEURMH = FXMarketHistory(["XBT","ETH","BCH","XRP","LTC"],240)
 
 AH = AllocationHistory(TL,FXEURMH)
 
-DF_BTC = FXEURMH.DataFrames[Currency("XBT")]
-DF_ETH = FXEURMH.DataFrames[Currency("ETH")]
+#DF_BTC = FXEURMH.DataFrame[Currency("XBT")]
+#DF_ETH = FXEURMH.DataFrames[Currency("ETH")]
 
 
 #DF_ETHBTC = FXBTCMH.DataFrames[Currency("ETH")]
 
-FXEURMH.RefactorReturns(.5, Currency("BCH"))
-DF_BCH = FXEURMH.DataFrames[Currency("BCH")]
-FXEURMH.RefactorReturns(.5, Currency("LTC"))
-DF_LTC = FXEURMH.DataFrames[Currency("LTC")]
-FXEURMH.RefactorReturns(.5, Currency("XRP"))
-DF_XRP = FXEURMH.DataFrames[Currency("XRP")]
+#FXEURMH.RefactorReturns(.5, Currency("BCH"))
+#DF_BCH = FXEURMH.DataFrames[Currency("BCH")]
+#FXEURMH.RefactorReturns(.5, Currency("LTC"))
+#DF_LTC = FXEURMH.DataFrames[Currency("LTC")]
+#FXEURMH.RefactorReturns(.5, Currency("XRP"))
+#DF_XRP = FXEURMH.DataFrames[Currency("XRP")]
 
 
 
-I = Index(FXEURMH, AH.StartDate)
-I.AddAllocationHistory2(AH)
-I.IndexCalculations()
+I = Index(AH, FXEURMH)
 
-print("I.Amount")
-print(I.Amount)
-print("I.Amount")
 
 fig2 = plt.figure()
-plt.plot(I.DataFrame["time"], I.DataFrame["Amount"])
+plt.plot(I.DataFrame["time"], I.DataFrame["Total"])
 plt.show()
 
 fig1 = plt.figure()
-plt.plot(I.DataFrame["time"], I.DataFrame["Index_XBT"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Index_ETH"],'-')
-#plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Total"],'-')
-plt.legend(["BTC", "ETH", "Strat"])
+plt.plot(I.DataFrame["time"], I.DataFrame["Spot_XBT"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Spot_ETH"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Spot_BCH"],'-')
+#plt.plot(I.DataFrame["time"], I.DataFrame["Total"],'-')
+plt.legend(["BTC", "ETH", "BCH"])
 plt.show()
 
 
-fig = plt.figure()
-plt.plot(DF_BTC["time"], DF_BTC["Index"],'-')
-plt.plot(DF_ETH["time"], DF_ETH["Index"],'-')
-plt.plot(DF_BCH["time"], DF_BCH["Index"],'-')
-plt.plot(DF_LTC["time"], DF_LTC["Index"],'-')
-plt.plot(DF_XRP["time"], DF_XRP["Index"],'-')
+#fig = plt.figure()
+#plt.plot(DF_BTC["time"], DF_BTC["Index"],'-')
+#plt.plot(DF_ETH["time"], DF_ETH["Index"],'-')
+#plt.plot(DF_BCH["time"], DF_BCH["Index"],'-')
+#plt.plot(DF_LTC["time"], DF_LTC["Index"],'-')
+#plt.plot(DF_XRP["time"], DF_XRP["Index"],'-')
 
-plt.legend(["BTC", "ETH", "BCH", "LTC", "XRP"])
-plt.show()
+#plt.legend(["BTC", "ETH", "BCH", "LTC", "XRP"])
+#plt.show()
 
 
 def PrintExample():

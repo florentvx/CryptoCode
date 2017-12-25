@@ -48,12 +48,12 @@ class Index:
             Allocs[self.CurrencyRef] += [alloc.Dictionary[self.CurrencyRef].Percentage]
 
         DF = pd.DataFrame()
-        DF["date"] = Dates
+        DF["time"] = Dates
 
         DF["Total"] = Total
         for cur in self.Currencies + [self.CurrencyRef]:
 
             if cur != self.CurrencyRef:
-                DF["Spot_" + cur.ToString] = Spots[cur]
+                DF["Spot_" + cur.ToID] = Spots[cur]
             DF["Alloc_" + cur.ToString] = Allocs[cur]
         self.DataFrame = DF

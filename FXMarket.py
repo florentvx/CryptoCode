@@ -88,7 +88,7 @@ class FXMarketHistory:
             self.Currencies += [cur]
         (FX,test) = self.FXMarkets.Get(date)
         if test == 1:
-            FX.AddQuote(cur, quote)
+            FX.AddQuote(XChangeRate(quote,cur,self.CurrencyRef))
         else:
             newFX = FXMarket([XChangeRate(quote, cur, self.CurrencyRef)])
             self.FXMarkets.Add(date,newFX)
@@ -102,7 +102,8 @@ class FXMarketHistory:
             raise Exception(XRate.ToString + " : Invalid quote (ref: " + self.CurrencyRef.ToString +")")
 
     def Download(self, cur: Currency, freq: int, fixing: str = "close", startDate: datetime = datetime.datetime(2017,1,1)):
-        DF = OHLC(X = cur, Z = self.CurrencyRef.name, startDate = startDate, freq = freq)
+        DF = OHLC(X = cur, Z = self.CurrencyRef, startDate = startDate, freq = freq)
+        #print(DF)
         for (index, row) in DF.iterrows():
             self.AddQuote(row["time"], cur, row[fixing])
 
