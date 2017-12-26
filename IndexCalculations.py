@@ -55,5 +55,33 @@ class Index:
 
             if cur != self.CurrencyRef:
                 DF["Spot_" + cur.ToID] = Spots[cur]
-            DF["Alloc_" + cur.ToString] = Allocs[cur]
+            DF["Alloc_" + cur.ToID] = Allocs[cur]
         self.DataFrame = DF
+
+    def CalculateIndex(self, ID: str):
+        self.DataFrame["Return_" + ID] = self.DataFrame["Spot_" + ID]/self.DataFrame["Spot_" + ID].shift(1) - 1
+        Index = [1000]
+        for (index, row) in self.DataFrame[1:].iterrows():
+            Index += [Index[-1] * (1 + row["Return_" + ID])]
+        self.DataFrame["Index_" + ID] = Index
+
+    def CalculateAllIndices(self):
+        for cur in self.Currencies:
+            id = cur.ToID
+            self.CalculateIndex(id)
+
+    def RefactorIndex(self, ID: str, factor: float):
+        self.DataFrame["Return_" + ID] = self.DataFrame["Spot_" + ID]/self.DataFrame["Spot_" + ID].shift(1) - 1
+        Index = [1000]
+        for (index, row) in self.DataFrame[1:].iterrows():
+            Index += [Index[-1] * (1 + factor * row["Return_" + ID])]
+        self.DataFrame["Index_" + ID] = Index
+
+    def CalculateStrategyIndex(self):
+        res = [1000]
+        for (index,row) in self.DataFrame[1:].iterrows():
+            ret = 0
+            for cur in self.Currencies:
+                ret += row["Alloc_" + cur.ToID] * row["Return_" + cur.ToID]
+            res += [res[-1] * (1 + ret)]
+        self.DataFrame["Index_Strat"] = res

@@ -50,19 +50,23 @@ AH = AllocationHistory(TL,FXEURMH)
 
 
 
-I = Index(AH, FXEURMH)
 
+I = Index(AH, FXEURMH)
+I.CalculateAllIndices()
+#print(I.DataFrame)
+I.CalculateStrategyIndex()
+I.RefactorIndex("BCH",0.5)
 
 fig2 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Total"])
 plt.show()
 
 fig1 = plt.figure()
-plt.plot(I.DataFrame["time"], I.DataFrame["Spot_XBT"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Spot_ETH"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Spot_BCH"],'-')
-#plt.plot(I.DataFrame["time"], I.DataFrame["Total"],'-')
-plt.legend(["BTC", "ETH", "BCH"])
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_XBT"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_ETH"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_Strat"],'-')
+plt.legend(["BTC", "ETH", "BCH", "Strat"])
 plt.show()
 
 
