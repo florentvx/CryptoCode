@@ -4,7 +4,7 @@ import urllib.request
 import time
 import datetime
 import pandas as pd
-from Prices import CurrencyPair
+from Prices import Currency, CurrencyPair
 
 
 
@@ -51,13 +51,13 @@ def JsonToDataFrame(Json, Numbers, type = "ledger"):
 #interval = time frame interval in minutes (optional):
 #	1 (default), 5, 15, 30, 60, 240, 1440, 10080, 21600
 
-def OHLC(X = "XBT", Z = "USD", startDate = datetime.datetime(2000,1,1), freq = 1140):
+def OHLC(X = Currency.XBT, Z = Currency.EUR, startDate = datetime.datetime(2000,1,1), freq = 1140):
     DF = pd.DataFrame()
     urlStart = "https://api.kraken.com/0/public/OHLC?"
     pairID = CurrencyPair(X,Z).RequestID
-    text = urllib.request.urlopen(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
     print(pairID)
-    #print(json.loads(text.read().decode('utf8'))["result"])
+    print(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
+    text = urllib.request.urlopen(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
     data = json.loads(text.read().decode('utf8'))["result"]
     keys = list(data.keys())
     data = data[keys[0]]

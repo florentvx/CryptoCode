@@ -57,14 +57,19 @@ class Price:
             self.Currency = Currency.NONE
 
     @property
+    def Copy(self):
+        return Price(self.Amount, self.Currency)
+
+    @property
     def ToString(self):
         return str(self.Amount) + " " + self.Currency.ToString
+
 
 class CurrencyPair:
 
     def __init__(self, X, Y):
-        self.X = Price(0,X).Currency
-        self.Y = Price(0,Y).Currency
+        self.X = X
+        self.Y = Y
 
     @property
     def ToString(self):
@@ -83,10 +88,11 @@ class XChangeRate:
     def __init__(self, rate: float, X, Y):
 
         self.Rate = rate
-        if rate > 1.0:
-            self.CurPair = CurrencyPair(X,Y)
-        else:
-            self.CurPair = CurrencyPair(Y,X)
+        self.CurPair = CurrencyPair(X,Y)
+
+    @property
+    def GetInverse(self):
+        return XChangeRate(1/self.Rate, self.CurPair.Y, self.CurPair.X)
 
     @property
     def ToString(self):

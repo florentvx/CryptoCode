@@ -10,43 +10,83 @@ class AllocationElement:
             self.Percentage = percentage
         else:
             Exception("Allocation Element > 100%")
-        self.Amount = amount
-        self.Currency = currency
+        self.Price = Price(amount, currency)
+
+    @property
+    def Amount(self):
+        return self.Price.Amount
+
+    def SetAmount(self, value):
+        self.Price.Amount = value
+
+    @property
+    def Currency(self):
+        return self.Price.Currency
 
     @property
     def ToString(self):
         return "( " + str(int(self.Percentage * 10000.0) / 100.0) + \
-               " %, " + str(self.Amount) + " " + self.Currency.ToString + " )"
+               " %, " + self.Price.ToString + ")"
 
-    @property
-    def Price(self):
-        return Price(self.Amount, self.Currency)
 
 class Allocation:
 
-    def __init__(self, dictionary: dict, date: datetime = datetime(2000,1,1), fees = AllocationElement(0., 0., Currency.NONE)):
-        self.Date = date
+    def __init__(self, dictionary: dict, fee = AllocationElement(0., 0., Currency.NONE)):
+        #self.Date = date
         self.Dictionary = dictionary
-        self.Fees = fees
+        self.Fee = fee
+        self.Total = Price(0,Currency.NONE)
 
-    def FirstDeposit(self, date: datetime, firstDeposit: Price):
-        self.Date = date
-        if self.Dictionary == {}:
-            if firstDeposit.Amount >= 0:
-                firstAlloc = AllocationElement(1., firstDeposit.Amount, firstDeposit.Currency)
-                self.Dictionary[firstDeposit.Currency] = firstAlloc
-            else:
-                Exception("First Deposit Strictly Positive")
-        else:
-            Exception("Wrong Use of First Deposit")
+    def CalculateTotal(self, FX: FXMarket, curRef: Currency = Currency.EUR):
+        total = Price(0,curRef)
+        for cur in self.Dictionary.keys():
+            total = FX.Sum(total, self.Dictionary[cur])
+        total = FX.Sum(total, self.Fee.Price)
+        self.Total = total
+        return total
 
-    def AddTransaction(self, transaction: Transaction, FXMarket: FXMarket):
+    def Copy(self):
+        dico = deepcopy(self.Dictionary)
+        fee = AllocationElement(self.Fee.Percentage, self.Fee.Amount, self.Fee.Currency)
+        return Allocation(dico, fee)
+
+    def CancelFee(self):
+        self.Fee = AllocationElement(0,0,Currency.NONE)
+
+    def UpdatePercentages(self,FX: FXMarket, curRef: Currency = Currency.EUR):
+        total = self.CalculateTotal(FX)
+        for cur in self.Dictionary.keys():
+            self.Dictionary[cur].Percentage = self.Dictionary[cur].Amount / FX.ConvertPrice(total, cur).Amount
+        if self.Fee.Currency != Currency.NONE:
+            self.Fee.Percentage = self.Fee.Amount / FX.ConvertPrice(total, self.Fee.Currency).Amount
+
+    def Move(self, FX: FXMarket, curRef : Currency = Currency.EUR):
+        newAlloc = self.Copy()
+        newAlloc.CancelFee()
+        newAlloc.UpdatePercentages(FX, curRef)
+        return newAlloc
+
+    #def FirstDeposit(self, firstDeposit: Price):
+    #    #self.Date = date
+    #    if self.Dictionary == {}:
+    #        if firstDeposit.Amount > 0:
+    #            firstAlloc = AllocationElement(1., firstDeposit.Amount, firstDeposit.Currency)
+    #            self.Dictionary[firstDeposit.Currency] = firstAlloc
+    #        else:
+    #            Exception("First Deposit has a Strictly Positive Price")
+    #    else:
+    #        Exception("Wrong Use of First Deposit")
+
+    def AddTransaction(self, transaction: Transaction, FX: FXMarket):
 
         res = deepcopy(self.Dictionary)
         fees = AllocationElement(0.,0,Currency.NONE)
 
+
+
         try:
-            res[transaction.Received.Currency].Amount += transaction.Received.Amount
+            allocIn = res[transaction.Received.Currency]
+            allocIn.SetAmount(allocIn.Amount + transaction.Received.Amount)
         except:
             res[transaction.Received.Currency] = \
                 AllocationElement(0.,transaction.Received.Amount, transaction.Received.Currency)
@@ -59,80 +99,83 @@ class Allocation:
 
             try:
                 alloc = res[transaction.Paid.Currency]
-                alloc.Amount -= transaction.Paid.Amount
+                alloc.SetAmount(alloc.Amount - transaction.Paid.Amount)
                 if alloc.Amount < 0:
                     raise Exception("Paid more than available")
             except:
-                raise Exception("Paid in unavailable currency")
+               raise Exception("Paid in unavailable currency")
 
                 # Fees
 
             try:
                 fAlloc = res[transaction.Fees.Currency]
-                fAlloc.Amount -= transaction.Fees.Amount
+                fAlloc.SetAmount(fAlloc.Amount - transaction.Fees.Amount)
                 if fAlloc.Amount < 0:
                     raise Exception("Paid more than available (fees)")
                 fees = AllocationElement(0., transaction.Fees.Amount, transaction.Fees.Currency)
             except:
                 raise Exception("Paid in unavailable currency (fees)")
 
+        newAlloc = Allocation(res, fees)
+        newAlloc.UpdatePercentages(FX)
+        return newAlloc
 
-        # Changing the Percentages
-
-        total = Price(0,Currency.NONE)
-        for cur in res.keys():
-            if total.Currency == Currency.NONE:
-                total = Price(res[cur].Amount, res[cur].Currency)
-            else:
-                total = FXMarket.Sum(total, res[cur])
-        if fees.Currency != Currency.NONE:
-            total = FXMarket.Sum(total, Price(fees.Amount, fees.Currency))
-        for cur in res.keys():
-            res[cur].Percentage = res[cur].Amount / FXMarket.ConvertPrice(total, cur).Amount
-        if fees.Currency != Currency.NONE:
-            fees.Percentage = fees.Amount / FXMarket.ConvertPrice(total, fees.Currency).Amount
-        return Allocation(res, transaction.Date, fees)
 
     @property
     def ToString(self):
-        res =  "Allocation: " + " " + str(self.Date) + '\n'
+        res =  "Allocation: " + '\n'
         for cur in self.Dictionary.keys():
             res += cur.ToString + ": " + self.Dictionary[cur].ToString + '\n'
         res += '\n'
-        res += "Fees: " + self.Fees.ToString
+        res += "Fees: " + self.Fee.ToString
         res += '\n'
         return res
 
 
 class AllocationHistory:
 
-    def __init__(self, TL: TransactionList, FXH: FXMarketHistory, Currency: Currency = Currency.EUR):
+    def __init__(self, TL: TransactionList, FXMH: FXMarketHistory):
+        self.Currencies = FXMH.Currencies
         alloc = Allocation({})
-        alloc.FirstDeposit(datetime(2000,1,1), Price(0, Currency))
-        self.History = {}
-        startDate = datetime(3000,1,1)
+        #alloc.FirstDeposit(date Price(0, Currency))
+        # Transaction List needs to be sorted before!!!!!!!!!!!!!!!!!!!!
+        #self.FXMH = FXMH
+        self.History = SortedDictionary()
         for transaction in TL.List:
-            FXMarket = FXH.GetFXMarket(transaction.Date)
-            if transaction.Date < startDate:
-                startDate = transaction.Date
-            alloc = alloc.AddTransaction(transaction,FXMarket)
-            self.History[alloc.Date] = alloc
-        self.StartDate = startDate
+            FX = FXMH.GetFXMarket(transaction.Date)
+            #if self.History.IsEmpty:
+            #    self.History.Add(transaction.Date, alloc.FirstDeposit(transaction.Received))
+            #else:
+            alloc = alloc.AddTransaction(transaction,FX)
+            alloc.CalculateTotal(FX)
+            self.History.Add(transaction.Date, alloc)
+        for date in FXMH.FXMarkets.Keys:
+            (alloc,test) = self.History.Get(date)
+            if alloc != None and test == False:
+                alloc = alloc.Move(FXMH.FXMarkets.HardGet(date))
+                self.History.Add(date, alloc)
+
+
+
+        #startDate = datetime(3000,1,1)
+        #for transaction in TL.List:
+        #    FXMarket = FXH.GetFXMarket(transaction.Date)
+        #    if transaction.Date < startDate:
+        #        startDate = transaction.Date
+        #    alloc = alloc.AddTransaction(transaction,FXMarket)
+        #    self.History[alloc.Date] = alloc
+        #self.StartDate = startDate
+
+
 
     def GetAllocation(self, date):
-        try:
-            alloc = self.History[date]
-        except:
-            lastAlloc = Allocation({})
-            lastAlloc.FirstDeposit(datetime(2000,1,1), Price(0, Currency))
-            for alloc in self.History:
-                if alloc.Date < date and alloc.date > lastAlloc:
-                    lastAlloc = alloc
-            return lastAlloc
+        return self.History.Get(date)
+
 
     @property
     def ToString(self):
         res = "Allocation History" + '\n'
-        for date in self.History:
-            res += self.History[date].ToString + '\n'
+        for date  in self.History.Keys:
+            res += "Date: " + str(date) + "\n"
+            res += self.History.HardGet(date).ToString + '\n'
         return res
