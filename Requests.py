@@ -28,7 +28,6 @@ def JsonToDataFrame(Json, Numbers, type = "ledger"):
     for key in data.keys():
         arrays[0] += [key]
         item = data[key]
-        print(item)
         for i in range(1,nColumns):
             title = Headers[i]
             value = item[title]
@@ -57,6 +56,7 @@ def OHLC(X = Currency.XBT, Z = Currency.EUR, startDate = datetime.datetime(2000,
     pairID = CurrencyPair(X,Z).RequestID
     print(pairID)
     print(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
+    print("")
     text = urllib.request.urlopen(urlStart + "pair=" + pairID+ "&interval=" + str(freq))
     data = json.loads(text.read().decode('utf8'))["result"]
     keys = list(data.keys())

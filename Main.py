@@ -35,18 +35,7 @@ FXEURMH.DownloadList([Currency.XBT,Currency.ETH,Currency.BCH,Currency.XRP,Curren
 
 AH = AllocationHistory(TL,FXEURMH)
 
-#DF_BTC = FXEURMH.DataFrame[Currency("XBT")]
-#DF_ETH = FXEURMH.DataFrames[Currency("ETH")]
-
-
-#DF_ETHBTC = FXBTCMH.DataFrames[Currency("ETH")]
-
-#FXEURMH.RefactorReturns(.5, Currency("BCH"))
-#DF_BCH = FXEURMH.DataFrames[Currency("BCH")]
-#FXEURMH.RefactorReturns(.5, Currency("LTC"))
-#DF_LTC = FXEURMH.DataFrames[Currency("LTC")]
-#FXEURMH.RefactorReturns(.5, Currency("XRP"))
-#DF_XRP = FXEURMH.DataFrames[Currency("XRP")]
+print(AH.GetLastAllocation().ToString)
 
 
 
@@ -55,7 +44,9 @@ I = Index(AH, FXEURMH)
 I.CalculateAllIndices()
 #print(I.DataFrame)
 I.CalculateStrategyIndex()
-I.RefactorIndex("BCH",0.5)
+#I.RefactorIndex("BCH",0.25)
+#I.RefactorIndex("LTC",0.25)
+#I.RefactorIndex("XRP", 0.25)
 
 fig2 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Total"])
@@ -64,9 +55,11 @@ plt.show()
 fig1 = plt.figure()
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_XBT"],'-')
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_ETH"],'-')
-plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
 plt.plot(I.DataFrame["time"], I.DataFrame["Index_Strat"],'-')
-plt.legend(["BTC", "ETH", "BCH", "Strat"])
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_BCH"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_LTC"],'-')
+plt.plot(I.DataFrame["time"], I.DataFrame["Index_XRP"],'-')
+plt.legend(["BTC", "ETH", "Strat", "BCH","LTC","XRP"])
 plt.show()
 
 

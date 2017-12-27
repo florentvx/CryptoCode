@@ -66,23 +66,10 @@ class Allocation:
         newAlloc.UpdatePercentages(FX, curRef)
         return newAlloc
 
-    #def FirstDeposit(self, firstDeposit: Price):
-    #    #self.Date = date
-    #    if self.Dictionary == {}:
-    #        if firstDeposit.Amount > 0:
-    #            firstAlloc = AllocationElement(1., firstDeposit.Amount, firstDeposit.Currency)
-    #            self.Dictionary[firstDeposit.Currency] = firstAlloc
-    #        else:
-    #            Exception("First Deposit has a Strictly Positive Price")
-    #    else:
-    #        Exception("Wrong Use of First Deposit")
-
     def AddTransaction(self, transaction: Transaction, FX: FXMarket):
 
         res = deepcopy(self.Dictionary)
         fees = AllocationElement(0.,0,Currency.NONE)
-
-
 
         try:
             allocIn = res[transaction.Received.Currency]
@@ -126,7 +113,6 @@ class Allocation:
         res =  "Allocation: " + '\n'
         for cur in self.Dictionary.keys():
             res += cur.ToString + ": " + self.Dictionary[cur].ToString + '\n'
-        res += '\n'
         res += "Fees: " + self.Fee.ToString
         res += '\n'
         return res
@@ -137,15 +123,12 @@ class AllocationHistory:
     def __init__(self, TL: TransactionList, FXMH: FXMarketHistory):
         self.Currencies = FXMH.Currencies
         alloc = Allocation({})
-        #alloc.FirstDeposit(date Price(0, Currency))
+
         # Transaction List needs to be sorted before!!!!!!!!!!!!!!!!!!!!
-        #self.FXMH = FXMH
+
         self.History = SortedDictionary()
         for transaction in TL.List:
             FX = FXMH.GetFXMarket(transaction.Date)
-            #if self.History.IsEmpty:
-            #    self.History.Add(transaction.Date, alloc.FirstDeposit(transaction.Received))
-            #else:
             alloc = alloc.AddTransaction(transaction,FX)
             alloc.CalculateTotal(FX)
             self.History.Add(transaction.Date, alloc)
@@ -156,21 +139,11 @@ class AllocationHistory:
                 self.History.Add(date, alloc)
 
 
-
-        #startDate = datetime(3000,1,1)
-        #for transaction in TL.List:
-        #    FXMarket = FXH.GetFXMarket(transaction.Date)
-        #    if transaction.Date < startDate:
-        #        startDate = transaction.Date
-        #    alloc = alloc.AddTransaction(transaction,FXMarket)
-        #    self.History[alloc.Date] = alloc
-        #self.StartDate = startDate
-
-
-
     def GetAllocation(self, date):
         return self.History.Get(date)
 
+    def GetLastAllocation(self):
+        return self.History.GetMax()
 
     @property
     def ToString(self):

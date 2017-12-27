@@ -1,5 +1,7 @@
 from enum import Enum, auto
 
+
+
 class Currency(Enum):
     NONE = "NONE"
     EUR = "EUR"
@@ -62,7 +64,7 @@ class Price:
 
     @property
     def ToString(self):
-        return str(self.Amount) + " " + self.Currency.ToString
+        return str(round(self.Amount,6)) + " " + self.Currency.ToString
 
 
 class CurrencyPair:

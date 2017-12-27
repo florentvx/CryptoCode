@@ -11,6 +11,14 @@ class SortedList():
     def IsEmpty(self):
         return self.N == 0
 
+    @property
+    def GetMin(self):
+        return self.List[0]
+
+    @property
+    def GetMax(self):
+        return self.List[self.N - 1]
+
     def __iter__(self):
         return iter(self.List)
 
@@ -117,6 +125,14 @@ class SortedDictionary:
                 return (None,False)
             else:
                 return (self.Dictionary[self.Keys.HardGet(i)],test)
+
+
+    def GetMin(self):
+        return self.Dictionary[self.Keys.GetMin]
+
+
+    def GetMax(self):
+        return self.Dictionary[self.Keys.GetMax]
 
     @property
     def ToString(self):
